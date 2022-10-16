@@ -1,0 +1,31 @@
+---
+version: "3.1"
+
+networks:
+  proxy:
+    external: true
+
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    networks:
+      - proxy
+    volumes:
+      - $PWD/data/app/data:/app/data
+    ports:
+      - 8083:3001
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges=true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.kuma.entrypoints=http
+      - traefik.http.routers.kuma.rule=Host(`uptime-kuma.example.com`)
+      - traefik.http.middlewares.kuma-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.kuma.middlewares=kuma-https-redirect
+      - traefik.http.routers.kuma-secure.entrypoints=https
+      - traefik.http.routers.kuma-secure.rule=Host(`uptime-kuma.example.com`)
+      - traefik.http.routers.kuma-secure.tls=true
+      - traefik.http.routers.kuma-secure.service=kuma
+      - traefik.http.routers.kuma-secure.middlewares=chain-authelia@file
+      - traefik.http.services.kuma.loadbalancer.server.port=3001
